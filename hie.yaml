@@ -1,0 +1,13 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "simply:lib"
+
+    - path: "./app/Main.hs"
+      component: "simply:exe:simply-exe"
+
+    - path: "./app/Paths_simply.hs"
+      component: "simply:exe:simply-exe"
+
+    - path: "./test"
+      component: "simply:test:simply-test"
