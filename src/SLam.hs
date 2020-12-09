@@ -152,4 +152,3 @@ envTwo = [(Const "y", HasType (tpar "a")),
           (Const "a", HasKind Star),
           (Const "b", HasKind Star)]
 
-
