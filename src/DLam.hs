@@ -51,8 +51,8 @@ evalInferT (Par x) _       = vpar x
 evalInferT (Var i) env     = env !! i
 evalInferT (App e1 e2) env = vapp (evalInferT e1 env) (evalCheckT e2 env)
 evalInferT Star _          = VStar
-evalInferT (Pi t1 t2) env = VPi (evalCheckT t1 env)
-                                (\x -> evalCheckT t2 (x : env))
+evalInferT (Pi t1 t2) env  = VPi (evalCheckT t1 env)
+                                 (\x -> evalCheckT t2 (x : env))
 
 evalCheckT :: CheckTerm -> Env -> Value
 evalCheckT (Infer e) env = evalInferT e env
@@ -86,7 +86,7 @@ quote i (VLam f)     = Lam (quote (i + 1) (f (vpar (Unquoted i))))
 quote i (VNeutral n) = Infer (neutralQuote i n)
 quote _ VStar        = Infer Star
 quote i (VPi v f)    = Infer (Pi (quote i v)
-                             (quote (i + 1) (f (vpar (Unquoted i)))))
+                                 (quote (i + 1) (f (vpar (Unquoted i)))))
 
 type Result a = Either String a
 
