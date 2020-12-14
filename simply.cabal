@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7da71e5af433eebda83adc337745850412cbdc06dbfd82cb6198343c39af2ecc
+-- hash: 15bb9cda1487988655669c0f8ffd1d100214757c1e81cb941e6a6d597c6d5248
 
 name:           simply
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      DLam
       Lib
       SLam
   other-modules:
