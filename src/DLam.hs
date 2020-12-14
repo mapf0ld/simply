@@ -1,6 +1,6 @@
 module DLam where
 
---import           Control.Monad (unless)
+import           Control.Monad (unless)
 
 data Name
     = Const String
@@ -69,3 +69,63 @@ iSubst i r (Pi t t')   = Pi (cSubst i r t) (cSubst (i + 1) r t')
 cSubst :: Int -> InferTerm -> CheckTerm -> CheckTerm
 cSubst i r (Infer e) = Infer (iSubst i r e)
 cSubst i r (Lam e)   = Lam (cSubst (i + 1) r e)
+
+varpar :: Int -> Name -> InferTerm
+varpar i (Unquoted k) = Var (i - k - 1)
+varpar _ x            = Par x
+
+neutralQuote :: Int -> Neutral -> InferTerm
+neutralQuote i (NPar x)   = varpar i x
+neutralQuote i (NApp n v) = App (neutralQuote i n) (quote i v)
+
+quoteZ :: Value -> CheckTerm
+quoteZ = quote 0
+
+quote :: Int -> Value -> CheckTerm
+quote i (VLam f)     = Lam (quote (i + 1) (f (vpar (Unquoted i))))
+quote i (VNeutral n) = Infer (neutralQuote i n)
+quote _ VStar        = Infer Star
+quote i (VPi v f)    = Infer (Pi (quote i v)
+                             (quote (i + 1) (f (vpar (Unquoted i)))))
+
+type Result a = Either String a
+
+typeOfInferT :: Int -> Context -> InferTerm -> Result Type
+typeOfInferT i ctxt (Ann e t)
+  = do typeOfCheckT i ctxt t VStar
+       let v = evalCheckT t []
+       typeOfCheckT i ctxt e v
+       return v
+
+typeOfInferT _ _ Star
+  = return VStar
+
+typeOfInferT i ctxt (Pi t t')
+  = do typeOfCheckT i ctxt t VStar
+       let v = evalCheckT t []
+       typeOfCheckT (i + 1) ((Bound i, v) : ctxt)
+                    (cSubst 0 (Par (Bound i)) t') VStar
+       return VStar
+
+typeOfInferT _ ctxt (Par x)
+  = case lookup x ctxt of
+      Just v  -> return v
+      Nothing -> Left "unknown identifier"
+
+typeOfInferT i ctxt (App e1 e2)
+  = do sigma <- typeOfInferT i ctxt e1
+       case sigma of
+         VPi v f -> do typeOfCheckT i ctxt e2 v
+                       return (f (evalCheckT e2 []))
+         _       -> Left "illegal application"
+typeOfInferT _ _ _
+  = Left "Unreachable"
+
+typeOfCheckT :: Int -> Context -> CheckTerm -> Type -> Result ()
+typeOfCheckT i ctxt (Infer e) t
+  = do e' <- typeOfInferT i ctxt e
+       unless (quoteZ t == quoteZ e') (Left "type mismatch")
+typeOfCheckT i ctxt (Lam e) (VPi v f)
+  = typeOfCheckT (i + 1) ((Bound i, v) : ctxt)
+                (cSubst 0 (Par (Bound i)) e) (f (vpar (Bound i)))
+typeOfCheckT _ _ _ _ = Left "type mismatch"
